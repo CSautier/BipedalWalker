@@ -1,6 +1,6 @@
 [Work in progress]
 
-#Continuous asynchronous PPO in Keras solving OpenAI's bipdedal walker
+# Continuous asynchronous PPO in Keras solving OpenAI's bipdedal walker
 
 This code aims to solve this problem.
 However this is still unfinished
