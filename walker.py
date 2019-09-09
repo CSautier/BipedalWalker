@@ -41,9 +41,9 @@ def main(args):
     # used to send the results of the net
     common_dict = manager.dict()
     # a queue of batches to be fed to the training net
-    mem_queue = manager.Queue(1500 * (args.processes + 1))
+    mem_queue = manager.Queue(1500 * mp.cpu_count())
     # a queue of operations pending
-    process_queue = manager.Queue(args.processes)
+    process_queue = manager.Queue(mp.cpu_count()-1)
 
     with mp.Pool() as pool:
         try:
