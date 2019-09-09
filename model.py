@@ -5,7 +5,7 @@ from torch.distributions import Normal
 
 ENTROPY_COEFF = 1e-4
 ACTOR_COEFF = 0.1
-CENTERING_COEFF = 0.00001
+CENTERING_COEFF = 0.0001
 LOSS_CLIPPING = 0.2
 
 
@@ -32,8 +32,7 @@ class MLP(nn.Module):
 
     def forward(self, x):
         mean = self.mean(x)
-        logstd = self.logstd
-        actor = Normal(mean, torch.exp(logstd))
+        actor = Normal(mean, torch.exp(2*self.logstd))
         if self.training:
             critic = self.critic(x)
             return actor, critic
@@ -46,14 +45,14 @@ class MLP(nn.Module):
         r = (prob + 1e-10) / (old_prob + 1e-10)
         advantage = (rewards - reward_predicted).detach().squeeze()
         mean = prob_distribution.mean
-        print(mean)
-        losscenter = CENTERING_COEFF * torch.mean(mean*mean)
+        # print(mean)
+        losscenter = CENTERING_COEFF * torch.mean(-1 - 1/((mean-1)*(mean+1)-1e-8))  # CENTERING_COEFF * torch.mean(mean*mean)
         lossactor = -ACTOR_COEFF*torch.mean(torch.min(r * advantage,
                                                       torch.clamp(r, min=(1.-LOSS_CLIPPING), max=(1.+LOSS_CLIPPING))
                                                       * advantage))
         losscritic = 5*F.mse_loss(reward_predicted, rewards)
-        print('Loss actor: {0:7.3f}  Loss critic: {1:7.3f}  100*Loss center: {2:6.3f}  Std: {3}'.format(
-            1000*lossactor, 1000*losscritic, 100000*losscenter, torch.exp(self.logstd).data.cpu().numpy()), flush=True)
+        print('Loss actor: {0:7.3f}  Loss critic: {1:7.3f}  Loss center: {2:6.3f}  Std: {3}'.format(
+            1000*lossactor, 1000*losscritic, 1000*losscenter, torch.exp(2*self.logstd).data.cpu().numpy()), flush=True)
         return lossactor + losscritic + losscenter  # + lossentropy
 
 

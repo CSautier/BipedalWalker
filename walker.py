@@ -24,10 +24,6 @@ parser.add_argument('--load', default=False,
                     dest='load', type=str2bool)
 parser.add_argument('--render', default=1, help='How many windows to prompt. This slows the training a bit',
                     dest='render', type=int)
-parser.add_argument('--processes', default=20,
-                    help='Number of processes that plays the game. '
-                         'Note: there will always be a process to learn from it',
-                    dest='processes', type=int)
 
 
 def main(args):
@@ -49,21 +45,21 @@ def main(args):
     # a queue of operations pending
     process_queue = manager.Queue(args.processes)
 
-    # initializes all workers
-    pool = mp.Pool(args.processes + 1)
-    try:
-        pool.apply_async(gpu_thread, (args.load, mem_queue, process_queue, common_dict))
-        for i in range(min(args.render, args.processes)):
-            pool.apply_async(cpu_thread, (True, mem_queue, process_queue, common_dict))
-        for i in range(args.processes - args.render):
-            # starts the player
-            pool.apply_async(cpu_thread, (False, mem_queue, process_queue, common_dict))
+    with mp.Pool() as pool:
+        try:
+            workers: int = pool._processes
+            print(f"Running pool with {workers} workers")
+            pool.apply_async(gpu_thread, (args.load, mem_queue, process_queue, common_dict, 0))
+            for i in range(1, min(args.render+1, workers)):
+                pool.apply_async(cpu_thread, (True, mem_queue, process_queue, common_dict, i))
+            for i in range(1+args.render, workers):
+                pool.apply_async(cpu_thread, (False, mem_queue, process_queue, common_dict, i))
 
-        pool.close()
-        pool.join()
-
-    except KeyboardInterrupt:
-        pool.join()
+            # Wait for children to finnish
+            pool.close()
+            pool.join()
+        except KeyboardInterrupt:
+            pool.join()
 
 
 if __name__ == "__main__":

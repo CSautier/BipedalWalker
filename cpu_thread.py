@@ -49,13 +49,16 @@ def generate_game(env, render, pid, process_queue, common_dict):
     return observation_list, reward_list, action_list, prob_list
 
 
-def cpu_thread(render, memory_queue, process_queue, common_dict):
+def cpu_thread(render, memory_queue, process_queue, common_dict, worker):
+    import psutil
+    p = psutil.Process()
+    p.cpu_affinity([worker])
     import signal
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     try:
         env = gym.make("BipedalWalker-v2")
         pid = os.getpid()
-        print('process started with pid: {}'.format(pid), flush=True)
+        print('process started with pid: {} on core {}'.format(os.getpid(), worker), flush=True)
         while True:
             observation_list, reward_list, action_list, prob_list = generate_game(env, render, pid, process_queue, common_dict)
             for i in range(len(observation_list)):

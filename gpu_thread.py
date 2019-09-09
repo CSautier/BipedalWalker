@@ -67,7 +67,7 @@ def run_epoch(model, optimizer, gpu_memory):
 
 
 class Customdeque(deque):
-    def __init__(self, maxlen=None):
+    def __init__(self):
         super(Customdeque, self).__init__()
 
     def pop_nth(self, n):
@@ -75,17 +75,20 @@ class Customdeque(deque):
         return self.popleft()
 
 
-def gpu_thread(load, memory_queue, process_queue, common_dict):
+def gpu_thread(load, memory_queue, process_queue, common_dict, worker):
     # the only thread that has an access to the gpu, it will then perform all the NN computation
+    import psutil
+    p = psutil.Process()
+    p.cpu_affinity([worker])
     import signal
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     try:
-        print('process started with pid: {}'.format(os.getpid()), flush=True)
+        print('process started with pid: {} on core {}'.format(os.getpid(), worker), flush=True)
         model = MLP(OBS_SPACE, ACTION_SPACE)
         model.to(device)
         # optimizer = optim.Adam(model.parameters(), lr=5e-5)
         # optimizer = optim.SGD(model.parameters(), lr=3e-2)  # TODO try RMSprop
-        optimizer = optim.AdamW(model.parameters(), lr=1e-4)  # TODO try RMSprop
+        optimizer = optim.AdamW(model.parameters(), lr=1e-4)
         epochs = 0
         if load:
             checkpoint = torch.load('./model/walker.pt')
