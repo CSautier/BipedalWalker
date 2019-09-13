@@ -11,13 +11,6 @@ def preprocess_state(state):
 
 def process_reward(reward, prev_action, state):
     return 0.01*reward
-    # if reward == -100:
-    #     return -1.
-    # return 0.1 * (state[2] + 0.1 * (np.cos(state[0]) * state[14] - 0.3)) - 0.1 * np.sum(
-    #     np.maximum(np.maximum(-prev_action - [1, 1, 1, 1],
-    #                           prev_action - [1, 1, 1, 1]), [0, 0, 0, 0]))
-    # return 0.1 * reward - 0.1*np.sum(np.maximum(np.maximum(-prev_action - [1, 1, 1, 1],
-    #                               prev_action - [1, 1, 1, 1]), [0, 0, 0, 0]))
 
 
 def generate_game(env, render, pid, process_queue, common_dict):

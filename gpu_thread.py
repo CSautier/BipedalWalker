@@ -47,8 +47,6 @@ def run_epoch(epochs, model, optimizer, observations, rewards, actions, probs):
         for i in range(len(observations) // parameters.BATCH_SIZE):
             optimizer.zero_grad()
             lossactor, losscritic = model.loss(observations[perm[i:i+parameters.BATCH_SIZE]], rewards[perm[i:i+parameters.BATCH_SIZE]], actions[perm[i:i+parameters.BATCH_SIZE]], probs[perm[i:i+parameters.BATCH_SIZE]])
-            # print('Loss actor: {0:7.3f}  Loss critic: {1:7.3f}  Loss center: {2:6.3f}'.format(
-            #     1000 * lossactor, 1000 * losscritic, 1000 * losscenter))
             if epochs > 10:
                 (lossactor + losscritic).backward()
             else:
@@ -57,8 +55,6 @@ def run_epoch(epochs, model, optimizer, observations, rewards, actions, probs):
                 # print(param.grad.data)
             #     param.grad.data.clamp_(-1e-2, 1e-2)
             optimizer.step()
-        # print('Loss actor: {0:7.3f}  Loss critic: {1:7.3f}  Loss center: {2:6.3f}'.format(
-        #     1000 * lossactor, 1000 * losscritic, 1000 * losscenter))
         print('Loss actor: {0:7.3f}  Loss critic: {1:7.3f}'.format(
             1000 * lossactor, 1000 * losscritic))
 
@@ -86,7 +82,7 @@ def gpu_thread(load, memory_queue, process_queue, common_dict, worker):
         # optimizer = optim.Adam(model.parameters(), lr=5e-5)
         # optimizer = optim.SGD(model.parameters(), lr=3e-2)  # TODO try RMSprop
         # optimizer = optim.AdamW(model.parameters(), lr=1e-4)
-        optimizer = optim.RMSprop(model.parameters(), lr=5e-5)
+        optimizer = optim.RMSprop(model.parameters(), lr=1e-4)
         epochs = 0
         if load:
             checkpoint = torch.load('./model/walker.pt')

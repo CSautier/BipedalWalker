@@ -55,7 +55,7 @@ def main(args):
             for i in range(1+args.render, workers):
                 pool.apply_async(cpu_thread, (False, mem_queue, process_queue, common_dict, i))
 
-            # Wait for children to finnish
+            # Wait for children to finish
             pool.close()
             pool.join()
         except KeyboardInterrupt:
