@@ -2,8 +2,7 @@ import os
 import gym
 import time
 import numpy as np
-
-GAMMA = 0.95
+from parameters import parameters
 
 
 def preprocess_state(state):
@@ -45,7 +44,7 @@ def generate_game(env, render, pid, process_queue, common_dict):
             env.render()
     print('Distance: {0:7.3f}'.format(np.sum(observation_list, 0)[2]), flush=True)  # TODO change to distance
     for i in range(len(reward_list) - 2, -1, -1):
-        reward_list[i] += reward_list[i + 1] * GAMMA  # compute the discounted obtained reward for each step
+        reward_list[i] += reward_list[i + 1] * parameters.GAMMA  # compute the discounted obtained reward for each step
     return observation_list, reward_list, action_list, prob_list
 
 
