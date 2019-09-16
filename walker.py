@@ -22,8 +22,9 @@ parser.add_argument('--load', default=False,
                     help='Whether or not to load pretrained weights. '
                          'You must have started an alread trained net for it to work',
                     dest='load', type=str2bool)
-parser.add_argument('--render', default=1, help='How many windows to prompt. This slows the training a bit',
-                    dest='render', type=int)
+parser.add_argument('--render', default=True, help='Show the game running in a separate process. '
+                                                   'This slows the training a bit',
+                    dest='render', type=str2bool)
 
 
 def main(args):
@@ -50,8 +51,8 @@ def main(args):
             workers: int = pool._processes
             print(f"Running pool with {workers} workers")
             pool.apply_async(gpu_thread, (args.load, mem_queue, process_queue, common_dict, 0))
-            for i in range(1, min(args.render+1, workers)):
-                pool.apply_async(cpu_thread, (True, mem_queue, process_queue, common_dict, i))
+            if args.render:
+                pool.apply_async(cpu_thread, (True, mem_queue, process_queue, common_dict, 1))
             for i in range(1+args.render, workers):
                 pool.apply_async(cpu_thread, (False, mem_queue, process_queue, common_dict, i))
 

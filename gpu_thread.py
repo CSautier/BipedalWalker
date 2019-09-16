@@ -44,7 +44,7 @@ def run_epoch(epochs, model, optimizer, observations, rewards, actions, probs):
     model.train()
     for _ in range(parameters.EPOCH_STEPS):
         perm = torch.randperm(len(observations))
-        for i in range(len(observations) // parameters.BATCH_SIZE):
+        for i in range(0, len(observations), parameters.BATCH_SIZE):
             optimizer.zero_grad()
             lossactor, losscritic = model.loss(observations[perm[i:i+parameters.BATCH_SIZE]], rewards[perm[i:i+parameters.BATCH_SIZE]], actions[perm[i:i+parameters.BATCH_SIZE]], probs[perm[i:i+parameters.BATCH_SIZE]])
             if epochs > 10:
@@ -80,8 +80,7 @@ def gpu_thread(load, memory_queue, process_queue, common_dict, worker):
         model = MLP(parameters.OBS_SPACE, parameters.ACTION_SPACE)
         model.to(parameters.DEVICE)
         # optimizer = optim.Adam(model.parameters(), lr=5e-5)
-        # optimizer = optim.SGD(model.parameters(), lr=3e-2)  # TODO try RMSprop
-        # optimizer = optim.AdamW(model.parameters(), lr=1e-4)
+        # optimizer = optim.SGD(model.parameters(), lr=3e-2)
         optimizer = optim.RMSprop(model.parameters(), lr=1e-4)
         epochs = 0
         if load:
@@ -93,8 +92,10 @@ def gpu_thread(load, memory_queue, process_queue, common_dict, worker):
         rewards = torch.Tensor([]).cuda()
         actions = torch.Tensor([]).cuda()
         probs = torch.Tensor([]).cuda()
+        common_dict['epoch'] = epochs
         while True:
-            memory_full, observations, rewards, actions, probs = destack_memory(memory_queue, observations, rewards, actions, probs)
+            memory_full, observations, rewards, actions, probs = \
+                destack_memory(memory_queue, observations, rewards, actions, probs)
             destack_process(model, process_queue, common_dict)
             if len(observations) > parameters.MAXLEN or memory_full:
                 epochs += 1
@@ -109,6 +110,7 @@ def gpu_thread(load, memory_queue, process_queue, common_dict, worker):
                     'optimizer_state_dict': optimizer.state_dict(),
                     'epochs': epochs
                 }, './model/walker.pt')
+                common_dict['epoch'] = epochs
     except Exception as e:
         print(e)
         print('saving before interruption', flush=True)
