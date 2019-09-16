@@ -39,7 +39,7 @@ def generate_game(env, pid, process_queue, common_dict):
     return observation_list, reward_list, action_list, prob_list
 
 
-def play(env, pid, process_queue, common_dict):
+def play_to_gif(env, pid, process_queue, common_dict):
     while 'epoch' not in common_dict:
         time.sleep(0.001)
     while True:
@@ -60,7 +60,20 @@ def play(env, pid, process_queue, common_dict):
                 display_frames_as_gif(frames, 'Episode {}.gif'.format(episode))
             except:
                 pass
+        time.sleep(0.1)
 
+def play(env, pid, process_queue, common_dict):
+    while True:
+        observation = env.reset()
+        done = False
+        while not done:
+            process_queue.put((pid, observation))
+            while pid not in common_dict:
+                time.sleep(0.0001)
+            action, prob = common_dict[pid]
+            del common_dict[pid]
+            observation, _, done, _ = env.step(np.clip(action, -1, 1))
+            env.render()
 
 def display_frames_as_gif(frames, name):
     """
@@ -81,21 +94,25 @@ def display_frames_as_gif(frames, name):
         anim.save('gifs/' + name, writer=animation.PillowWriter(fps=40))
 
 
-def cpu_thread(render, memory_queue, process_queue, common_dict, worker):
+def cpu_thread(render, memory_queue, process_queue, common_dict, core):
     import psutil
     p = psutil.Process()
-    p.cpu_affinity([worker])
+    p.cpu_affinity([core])
     import signal
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     try:
         env = gym.make("BipedalWalker-v2")
         pid = os.getpid()
-        print('process started with pid: {} on core {}'.format(os.getpid(), worker), flush=True)
-        if render:
+        print('process started with pid: {} on core {}'.format(os.getpid(), core), flush=True)
+        if render == 0:
+            while True:
+                observation_list, reward_list, action_list, prob_list = generate_game(env, pid, process_queue, common_dict)
+                for i in range(len(observation_list)):
+                    memory_queue.put((observation_list.pop(), reward_list.pop(), action_list.pop(), prob_list.pop()))
+        elif render == 1:
+            play_to_gif(env, pid, process_queue, common_dict)
+        elif render == 2:
             play(env, pid, process_queue, common_dict)
-        while True:
-            observation_list, reward_list, action_list, prob_list = generate_game(env, pid, process_queue, common_dict)
-            for i in range(len(observation_list)):
-                memory_queue.put((observation_list.pop(), reward_list.pop(), action_list.pop(), prob_list.pop()))
+
     except Exception as e:
         print(e, flush=True)

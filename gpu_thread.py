@@ -8,7 +8,7 @@ from parameters import parameters
 
 def process_observations(observations, model):
     with torch.no_grad():
-        actors = model.forward(torch.Tensor(observations).cuda())
+        actors = model.forward(torch.Tensor(observations).to(parameters.DEVICE))
         actions = actors.sample()
         return actions.cpu().numpy(), torch.prod(actors.cdf(actions), 1).cpu().numpy()
 
@@ -30,10 +30,10 @@ def destack_memory(memory_queue, observations, rewards, actions, probs):
     while memory_queue.qsize() > 0:
         try:
             _, __, ___, ____ = memory_queue.get(True)
-            observations = torch.cat((observations, torch.Tensor(_).cuda().unsqueeze(0)))
-            rewards = torch.cat((rewards, torch.Tensor([__]).cuda().unsqueeze(0)))
-            actions = torch.cat((actions, torch.Tensor([___]).cuda()))
-            probs = torch.cat((probs, torch.Tensor([____]).cuda()))
+            observations = torch.cat((observations, torch.Tensor(_).to(parameters.DEVICE).unsqueeze(0)))
+            rewards = torch.cat((rewards, torch.Tensor([__]).to(parameters.DEVICE).unsqueeze(0)))
+            actions = torch.cat((actions, torch.Tensor([___]).to(parameters.DEVICE)))
+            probs = torch.cat((probs, torch.Tensor([____]).to(parameters.DEVICE)))
         except Exception as e:
             print(e)
             return True, observations, rewards, actions, probs
@@ -88,10 +88,10 @@ def gpu_thread(load, memory_queue, process_queue, common_dict, worker):
             model.load_state_dict(checkpoint['model_state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             epochs = checkpoint['epochs']
-        observations = torch.Tensor([]).cuda()
-        rewards = torch.Tensor([]).cuda()
-        actions = torch.Tensor([]).cuda()
-        probs = torch.Tensor([]).cuda()
+        observations = torch.Tensor([]).to(parameters.DEVICE)
+        rewards = torch.Tensor([]).to(parameters.DEVICE)
+        actions = torch.Tensor([]).to(parameters.DEVICE)
+        probs = torch.Tensor([]).to(parameters.DEVICE)
         common_dict['epoch'] = epochs
         while True:
             memory_full, observations, rewards, actions, probs = \
@@ -101,10 +101,10 @@ def gpu_thread(load, memory_queue, process_queue, common_dict, worker):
                 epochs += 1
                 print('-' * 60 + '\n        epoch ' + str(epochs) + '\n' + '-' * 60)
                 run_epoch(epochs, model, optimizer, observations, rewards, actions, probs)
-                observations = torch.Tensor([]).cuda()
-                rewards = torch.Tensor([]).cuda()
-                actions = torch.Tensor([]).cuda()
-                probs = torch.Tensor([]).cuda()
+                observations = torch.Tensor([]).to(parameters.DEVICE)
+                rewards = torch.Tensor([]).to(parameters.DEVICE)
+                actions = torch.Tensor([]).to(parameters.DEVICE)
+                probs = torch.Tensor([]).to(parameters.DEVICE)
                 torch.save({
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),

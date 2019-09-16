@@ -25,6 +25,8 @@ parser.add_argument('--load', default=False,
 parser.add_argument('--render', default=True, help='Show the game running in a separate process. '
                                                    'This slows the training a bit',
                     dest='render', type=str2bool)
+parser.add_argument('--training', default=True, help='Train the net',
+                    dest='train', type=str2bool)
 
 
 def main(args):
@@ -45,16 +47,15 @@ def main(args):
     mem_queue = manager.Queue(1500 * mp.cpu_count())
     # a queue of operations pending
     process_queue = manager.Queue(mp.cpu_count()-1)
-
-    with mp.Pool() as pool:
+    workers = mp.cpu_count() if args.train else 2
+    with mp.Pool(workers) as pool:
         try:
-            workers: int = pool._processes
             print(f"Running pool with {workers} workers")
             pool.apply_async(gpu_thread, (args.load, mem_queue, process_queue, common_dict, 0))
             if args.render:
-                pool.apply_async(cpu_thread, (True, mem_queue, process_queue, common_dict, 1))
+                pool.apply_async(cpu_thread, (2 if not args.train else 1, mem_queue, process_queue, common_dict, 1))
             for i in range(1+args.render, workers):
-                pool.apply_async(cpu_thread, (False, mem_queue, process_queue, common_dict, i))
+                pool.apply_async(cpu_thread, (0, mem_queue, process_queue, common_dict, i))
 
             # Wait for children to finish
             pool.close()
