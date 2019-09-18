@@ -17,10 +17,10 @@ def destack_process(model, process_queue, common_dict):
     if process_queue.qsize() > 0:
         model.eval()
         pids, observations = [], []
-        while process_queue.qsize() > 0:
-            _, __ = process_queue.get(True)
-            pids.append(_)
-            observations.append(__)
+        for _ in range(process_queue.qsize()):
+            id, obs = process_queue.get(True)
+            pids.append(id)
+            observations.append(obs)
         actions, probs = process_observations(observations, model)
         for pid, action, prob in zip(pids, actions, probs):
             common_dict[pid] = (action, prob)
@@ -47,7 +47,7 @@ def run_epoch(epochs, model, optimizer, observations, rewards, actions, probs):
         for i in range(0, len(observations), parameters.BATCH_SIZE):
             optimizer.zero_grad()
             lossactor, losscritic = model.loss(observations[perm[i:i+parameters.BATCH_SIZE]], rewards[perm[i:i+parameters.BATCH_SIZE]], actions[perm[i:i+parameters.BATCH_SIZE]], probs[perm[i:i+parameters.BATCH_SIZE]])
-            if epochs > 10:
+            if epochs >= parameters.BURN_IN:
                 (lossactor + losscritic).backward()
             else:
                 losscritic.backward()
@@ -55,8 +55,8 @@ def run_epoch(epochs, model, optimizer, observations, rewards, actions, probs):
                 # print(param.grad.data)
             #     param.grad.data.clamp_(-1e-2, 1e-2)
             optimizer.step()
-        print('Loss actor: {0:7.3f}  Loss critic: {1:7.3f}'.format(
-            1000 * lossactor, 1000 * losscritic))
+        print('Loss actor: {0:7.3f}  Loss critic: {1:7.3f}  Logstd: {2:7.3f}'.format(
+            10000 * lossactor, 10000 * losscritic, model._rate * model.logstd.item()))
 
 
 # class Customdeque(deque):

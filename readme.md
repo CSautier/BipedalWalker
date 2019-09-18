@@ -1,9 +1,17 @@
 # Continuous asynchronous PPO in Pytorch solving OpenAI's bipdedal walker
 
 This is an algorithm written with Pytorch that aims at solving the Bipedal Walker [1] problem.
-It uses a Proximity Policy Optimisation [2]. For now, it achieves consistantly distances of over 220/300 within a few hours of training.
-It is aimed at making full use of a computer's GPU and multicore CPU, by combining a 'net' thread for the gpu, 
-and multiple 'experience' threads for the cpu.
+It uses a Proximity Policy Optimisation [2]. 
+For now, it achieves consistantly distances of over 450 within a few hours of training.
+It is aimed at making full use of a computer's GPU and multicore CPU, by combining a *net* thread for the gpu, 
+and multiple *experience* threads for the cpu.
+
+##
+
+![Result of the bot](gifs/movie.gif)  
+My bot plays in green (right)
+
+
 
 ## Requirements
 
@@ -31,9 +39,14 @@ You can stop and resume the training at any time.
 Simply set the option `--load` to true.
 
 ## Observing a trained network
+
 If you have a trained network in your ./model folder, you can run: \
 `python walker.py --training false` \
 to observe it play.
+
+## Known issues
+
+Gif saving can become inconsistent if your computer log out.
 
 ## References
 [1] https://openai.com/ \

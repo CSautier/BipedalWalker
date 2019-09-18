@@ -24,11 +24,13 @@ class MLP(nn.Module):
             nn.Linear(obs_space * 8, action_space),
             nn.Tanh()
         )
-        self.logstd = nn.Parameter(torch.Tensor([0, 0, 0, 0]))
+        self._rate = parameters.STD_MODIFICATION_RATE
+        # self.logstd = nn.Parameter(torch.Tensor([0, 0, 0, 0]))
+        self.logstd = nn.Parameter(torch.Tensor([0]))
 
     def forward(self, x):
         mean = self.mean(x)
-        actor = Normal(mean, torch.exp(self.logstd))
+        actor = Normal(mean, torch.exp(self._rate * self.logstd))
         if self.training:
             critic = self.critic(x)
             return actor, critic
@@ -39,7 +41,8 @@ class MLP(nn.Module):
         # prob = torch.prod(prob_distribution.cdf(actions), dim=1)
         r = (torch.prod(prob_distribution.cdf(actions), dim=1) + 1e-10) / (old_prob + 1e-10)
         advantage = (rewards - reward_predicted).detach().squeeze()
-        # print(mean)
+        # print(prob_distribution.mean)
+        # lossentropy = - parameters.ENTROPY_COEFF * torch.mean(prob_distribution.entropy())
         lossactor = - parameters.ACTOR_COEFF \
                     * torch.mean(torch.min(r * advantage,
                                            torch.clamp(r,
@@ -47,4 +50,4 @@ class MLP(nn.Module):
                                                        max=(1. + parameters.LOSS_CLIPPING))
                                            * advantage))
         losscritic = F.mse_loss(reward_predicted, rewards)
-        return lossactor, losscritic
+        return lossactor, losscritic  #, lossentropy

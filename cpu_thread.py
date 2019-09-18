@@ -33,9 +33,13 @@ def generate_game(env, pid, process_queue, common_dict):
         action_list.append(action)
         prob_list.append(prob)
         reward_list.append(process_reward(reward))
-    print('Distance: {0:7.3f}'.format(np.sum(observation_list, 0)[2]), flush=True)
+    if reward != -100:
+        reward_list[-1] = reward_list[-1]/(1-parameters.GAMMA)
+    print('Distance: {0:5.1f}'.format(np.sum(observation_list, 0)[2]), flush=True)
     for i in range(len(reward_list) - 2, -1, -1):
         reward_list[i] += reward_list[i + 1] * parameters.GAMMA  # compute the discounted obtained reward for each step
+    if reward != -100:
+        return observation_list[:-20], reward_list[:-20], action_list[:-20], prob_list[:-20]
     return observation_list, reward_list, action_list, prob_list
 
 
@@ -56,11 +60,10 @@ def play_to_gif(env, pid, process_queue, common_dict):
                 del common_dict[pid]
                 observation, _, done, _ = env.step(np.clip(action, -1, 1))
                 frames.append(env.render(mode='rgb_array'))
-            try:
-                display_frames_as_gif(frames, 'Episode {}.gif'.format(episode))
-            except:
-                pass
+            display_frames_as_gif(frames, 'Episode {}.gif'.format(episode))
+            del frames
         time.sleep(0.1)
+
 
 def play(env, pid, process_queue, common_dict):
     while True:
@@ -75,6 +78,7 @@ def play(env, pid, process_queue, common_dict):
             observation, _, done, _ = env.step(np.clip(action, -1, 1))
             env.render()
 
+
 def display_frames_as_gif(frames, name):
     """
     Displays a list of frames as a gif, with controls
@@ -88,10 +92,7 @@ def display_frames_as_gif(frames, name):
         patch.set_data(frames[i])
 
     anim = animation.FuncAnimation(plt.gcf(), animate, frames=len(frames), interval=33)
-    try:
-        anim.save('gifs/' + name)
-    except:
-        anim.save('gifs/' + name, writer=animation.PillowWriter(fps=40))
+    anim.save('gifs/' + name, writer=animation.PillowWriter(fps=40))
 
 
 def cpu_thread(render, memory_queue, process_queue, common_dict, core):
