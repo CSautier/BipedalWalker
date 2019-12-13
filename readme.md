@@ -6,10 +6,10 @@ For now, it achieves consistantly distances of over 450 within a few hours of tr
 It is aimed at making full use of a computer's GPU and multicore CPU, by combining a *net* thread for the gpu, 
 and multiple *experience* threads for the cpu.
 
-##
+## Result
 
 ![Result of the bot](gifs/movie.gif)  
-My bot plays in green (right)
+My bot after ~2h of training
 
 
 
